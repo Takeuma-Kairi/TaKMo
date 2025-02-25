@@ -1,7 +1,7 @@
 import re #正規表現ライブラリ
-import tkinter as tk
 from tkinter import *
-from tkinter import ttk
+import tkinter as tk
+#from tkinter import ttk
 import tkinter.font as tkfont
 import textwrap
 
@@ -47,16 +47,21 @@ UI_large_font = tkfont.Font(
     size=17
 )
 
+Title_font = tkfont.Font(root, family="Yu Gothic Bold", size=20)
+
 #左側~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #左側（タイトル、描写）のウィジェットをまとめるフレーム
 pageF = tk.Frame(root, width=398)
 pageF.propagate(False) #フレームサイズが変更されないようにする
-#タイトル
+
+############
+#タイトル 
 titleV = tk.StringVar()
 titleV.set("デフォルトのタイトル")
-titleM = tk.Message(pageF, justify="center", width=380,textvariable=titleV,font=("Yu Gothic Bold", 20))
+titleM = tk.Message(pageF, justify="center", width=380,textvariable=titleV,font=Title_font)
 
-#描写内容が入る配列
+############
+#描写内容が入る配列 
 msgArr = []
 
 
@@ -65,44 +70,67 @@ msgArr = []
 subF = tk.Frame(root, width=206, bg="#c0c0c0")
 subF.propagate(False) #フレームサイズが変更されないようにする
 
-#画像表示用
+############
+#画像表示用 
 # イメージ作成
 # イメージの配置がよくわからん。実際に表示されるのはshow_page内での再処理を経てから
 canvas = tk.Canvas(subF, bg="black", height=198, width=202, relief=tk.RIDGE, borderwidth="3")
-img = PhotoImage(file="source/gate.png", height=95, width=95)
+img = PhotoImage(file="source/images/white.png", height=95, width=95)
 canvas.create_image(105,105,image=img)
 
-#選択リストLと、そのスクロールバーS、選択ボタンB
+############
+#選択リストLと、そのスクロールバーS、選択ボタンB 
 #リストの中の選択肢を管理する変数selectV。中にはリストなどを入れる
 selectV = tk.StringVar()
 selectF = tk.Frame(subF)
 
 #selectFのなかに、LとSを横並びで入れる
-selectL = tk.Listbox(selectF, justify="center", listvariable=selectV, height=4,width=15,relief=tk.RIDGE,borderwidth="5",font=Default_font, selectmode="SINGLE")
+selectL = tk.Listbox(selectF, justify="center", listvariable=selectV, height=4,width=15,relief=tk.RIDGE,borderwidth="5",font=Default_font, selectmode="BROWSE")
 selectS = tk.Scrollbar(selectF, orient=VERTICAL, width=15)
 selectS["command"]=selectL.yview
+
 
 selectB = tk.Button(subF, justify="center", text='決定', command=lambda:eval_selection(selectL.curselection()[0]),font=UI_large_font)
 
 
-#もちものを開く、閉じる
-itemB = tk.Button(subF, justify="center", text='もちものを見る', command=lambda:swith_item_page(),font=UI_large_font)
-
-#リストが選択されたら、ボタンをアクティブにする。
-def btn_activate(event):
-#注意！リストに何も入っていない状態でクリックされた場合でも、<<ListboxSelect>>イベントが発生してしまう。
-#そのため、ボタンを押しても何も選択されていないのでエラーが起こる。
-#これをふせぐために、リストの選択数が0でないときだけ、ボタンをアクティブにする。
-    if(len(selectL.curselection()) != 0):   
+#1回リストが選択されたら、selectBボタンをアクティブにする。
+def listbox_select(event):
+    if len(selectL.curselection())>0:   #何か選択されている場合、
         selectB["state"] = "normal"
-                
-selectL.bind("<<ListboxSelect>>", btn_activate)
+            #注意！リストに何も入っていない状態でクリックされた場合でも、<<ListboxSelect>>イベントが発生してしまう。
+            #そのため、ボタンを押しても何も選択されていないのでエラーが起こる。
+            #これをふせぐために、リストの選択数が0でないときだけ、ボタンをアクティブにする。
+
+#ダブルクリックされたら、selectBボタンを押さなくても直で実行する
+def listbox_double_clicked(event):
+    if len(selectL.curselection())>0:
+        eval_selection(selectL.curselection()[0])
+        
+            
+selectL.bind("<<ListboxSelect>>", listbox_select)
+selectL.bind("<Double-Button-1>", listbox_double_clicked)
     
+#selectBボタンでエンターキーを押されても、listbox_double_clickedと同等の処理を行う。commandプロパティは、クリック時しか動かないので。
+selectB.bind("<Return>", listbox_double_clicked)
+
+
+############
+#もちものを開く、閉じる
+itemB = tk.Button(subF, justify="center", text='もちものを見る', bg="#E0E0E0",command=lambda:switch_item_page(),font=UI_large_font)
+
+def Enter_key_switch_item_page(event):
+    switch_item_page()
+    
+#itemBボタンでエンターキーを押されても、switch_item_page()と同等の処理を行う。commandプロパティは、クリック時しか動かないので。
+itemB.bind("<Return>", Enter_key_switch_item_page)
+
+
+
 #============================================================= 
 #ファイルを読み込んで、データを配列に落とし込む。
 
 #ファイル読み込み
-f = open('script.txt', 'r', encoding='UTF-8')  
+f = open('source/script.txt', 'r', encoding='UTF-8')  
 
 #読み込んで各行を配列にする。
 story_data = f.readlines()
@@ -249,7 +277,7 @@ def show_item():
     
     #画像は真っ白にしておく
     global img
-    img = PhotoImage(file="source/white.png", height=200, width=200)
+    img = PhotoImage(file="source/images/white.png", height=200, width=200)
     canvas.create_image(105,105,image=img)
 
     ###選択肢###
@@ -300,7 +328,7 @@ def show_page():
     
     ###絵###
     global img
-    img_src= "source/" + now_page["img"] + ".png"
+    img_src= "source/images/" + now_page["img"] + ".png"
     img = PhotoImage(file=img_src, width=200,height=200)
     canvas.create_image(0,4,image=img, anchor="nw")
     
@@ -406,15 +434,17 @@ page_num = 0    #今いるページ番号
 ###################################
 
 #もちもののボタン(itemB)を押したときの反応について
-def swith_item_page():
+def switch_item_page():
     global item_page
     if item_page=="page":    #今、ページを開いているなら、持ち物を開くようにする
         item_page = "item"
         itemB["text"] = "もちものを閉じる"
+        itemB["bg"]="#F0C0C0"
         show_item()
     else:
         item_page = "page"
         itemB["text"] = "もちものを見る"
+        itemB["bg"]="#E0E0E0"
         show_page()
     
 #################################
