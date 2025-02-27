@@ -12,16 +12,9 @@ charaArr= []
 itemArr = []
 pageArr = []
 
-mode = 0
-#modeは、1ならChara、2ならpageを読み込んでいるという意味
-
-item_page="page" #今表示しているものは、ページ("page")かもちもの("item")か
+page_num = 0 #ページ番号。BTAPでいうところのmov関数などの制御に使おうかと。
 #===================================
-
-temp_pageArr = {"title": "" ,  "img": "", "description":[] , "selection": []}
-
-page_num = -1 #ページ番号。BTAPでいうところのmov関数などの制御に使おうかと。
-#ページタイトルの時に１つ増やすので、実際の運用は0以上の整数となる。
+item_page="page" #今表示しているものは、ページ("page")かもちもの("item")か
 
 root = Tk()
 root.title("Tk習作")
@@ -32,26 +25,30 @@ root.geometry("650x450")
 # フォント
 Default_font = tkfont.Font(
     root,
-    family="",
-    size=16
+    family="ＭＳ ゴシック",
+    size=15
 )
 
 Bold_font = tkfont.Font(
     root,
-    family="",
-    size=16,
+    family="ＭＳ ゴシック",
+    size=15,
     weight="bold"
 )
 #    family="Yu Ghotic",
 UI_large_font = tkfont.Font(
     root,
-    family="",
-    size=17
+    family="ＭＳ ゴシック",
+    size=16,
+    weight="bold"
 )
 
-Title_font = tkfont.Font(root, family="Yu Gothic Bold", size=20)
+Title_font = tkfont.Font(root, family="ＭＳ ゴシック", size=20)
+ 
+#============================================================= 
+#============================================================= 
+#メニューバー設定
 
-#==============================
 menubar= tk.Menu(root)
 root.config(menu=menubar)
 
@@ -62,6 +59,7 @@ fontmenu.add_command(label="文字を大きくする",command=lambda:change_font
 fontmenu.add_command(label="文字を小さくする",command=lambda:change_font_size(-1))
 fontmenu.add_separator()
 #②フォント
+fontmenu.add_command(label="ＭＳ ゴシック",command=lambda:change_font("ＭＳ ゴシック"))
 fontmenu.add_command(label="MS UI Ghotic",command=lambda:change_font("MS UI Ghotic"))
 fontmenu.add_command(label="BIZ UDゴシック",command=lambda:change_font("BIZ UDゴシック"))
 fontmenu.add_command(label="BIZ UD明朝 Medium",command=lambda:change_font("BIZ UD明朝 Medium"))
@@ -74,7 +72,6 @@ fontmenu.add_command(label="メイリオ", command=lambda:change_font("メイリ
 fontmenu.add_command(label="HGS教科書体",command=lambda:change_font("HGS教科書体"))
 fontmenu.add_command(label="HGS創英角ﾎﾟｯﾌﾟ体",command=lambda:change_font("HGS創英角ﾎﾟｯﾌﾟ体"))
 
-menubar.add_cascade(label="フォント", menu=fontmenu)
 
 #フォントを変える
 def change_font(fontname):
@@ -89,6 +86,44 @@ def change_font_size(d):
     Bold_font["size"]+=d
     UI_large_font["size"]+=d
     Title_font["size"]+=d
+    
+    
+
+#表示メニュー～～～～～～～～～～～～～
+Appearmenu=tk.Menu(menubar, tearoff=1)
+Appearmenu.add_command(label="リストボックスの幅を大きく",command=lambda:change_SelectL_width(1))
+Appearmenu.add_command(label="リストボックスの幅を小さく",command=lambda:change_SelectL_width(-1))
+Appearmenu.add_command(label="リストボックスの高さを大きく",command=lambda:change_SelectL_height(1))
+Appearmenu.add_command(label="リストボックスの高さを小さく",command=lambda:change_SelectL_height(-1))
+
+#リストボックスの高さ、幅を変更する
+def change_SelectL_height(d):
+    selectL["height"] += d
+    visible_change_selectS()    #高さ変更により、スクロールバー表示するか変更する
+
+def change_SelectL_width(d):
+    selectL["width"] += d 
+    
+#ページ閲覧についてのメニュー～～～～～～～～～～～～～
+Pagemenu=tk.Menu(menubar, tearoff=1)
+Pagemenu.add_command(label="初期化",command=lambda:from_scratch())
+
+
+
+menubar.add_cascade(label="ページ", menu=Pagemenu)
+menubar.add_cascade(label="表示", menu=Appearmenu)
+menubar.add_cascade(label="フォント", menu=fontmenu)
+
+
+
+#============================================================= 
+#============================================================= 
+#~~~~~~~
+# アイコン
+iconfile = 'source/Icon.ico'
+root.iconbitmap(default=iconfile)
+
+
 #左側~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #左側（タイトル、描写）のウィジェットをまとめるフレーム
 pageF = tk.Frame(root, width=400, pady=10,padx=10)
@@ -125,7 +160,7 @@ selectV = tk.StringVar()
 selectF = tk.Frame(subF)
 
 #selectFのなかに、LとSを横並びで入れる
-selectL = tk.Listbox(selectF, justify="center", listvariable=selectV, height=4,width=15,relief=tk.RIDGE,borderwidth="5",font=Default_font, selectmode="BROWSE")
+selectL = tk.Listbox(selectF, justify="center", listvariable=selectV, height=4,width=16,relief=tk.RIDGE,borderwidth="5",font=Default_font, selectmode="BROWSE")
 selectS = tk.Scrollbar(selectF, orient=VERTICAL, width=15)
 selectS["command"]=selectL.yview
 
@@ -167,107 +202,133 @@ itemB.bind("<Return>", Enter_key_switch_item_page)
 
 
 #============================================================= 
+#============================================================= 
+#=============================================================
+#============================================================= 
+
 #ファイルを読み込んで、データを配列に落とし込む。
+def load_file(src):
+    #ファイル読み込み================================
+    f = open(src, 'r', encoding='UTF-8')  
 
-#ファイル読み込み
-f = open('source/script.txt', 'r', encoding='UTF-8')  
+    #読み込んで各行を配列にする。
+    story_data = f.readlines()
+    f.close()
+    #ファイル読み込み終わり===========================
 
-#読み込んで各行を配列にする。
-story_data = f.readlines()
-f.close()
 
-#走査
-for i in range(len(story_data)):
-    line = story_data[i].rstrip('\n')   #読み込んだあとの各行には、改行コードが入っていることがあるので除去する
-
-        # キャラクターを記載する際は、
-        #  ・ 番号は0からはじめ、改行するごとに1ずつ増やさねばならない
-        # という仕様を設ける。
-        # どうせそうするのだから、「番号>」の部分は要らないのでは無いかとも思うが、
-        # 後から参照するときに、このキャラは何番だっけ…と迷わないための、お行儀の良いインデックスに。と暫定的に思う
+    mode = 0    #modeは、1ならChara、2ならpageを読み込んでいるという意味
+    temp_pageArr = {"title": "" ,  "img": "", "description":[] , "selection": []}#これいる？
     
-    #コメントはすっとばす
-    if re.match(r'//', line):
-        continue
+    page_num_counter = -1 #ページ番号。ページタイトルの時に１つ増やすので、実際の運用は0以上の整数となる。
     
-    #フラグかどうか
-    REflag = re.match(r'f:(.*)', line)
-    if REflag:
-        flag_max = int(REflag.group(1))
-        for i in range(flag_max):
-            flagArr.append(False)
+    #各行を走査する
+    for i in range(len(story_data)):
+        line = story_data[i].rstrip('\n')   
+        #読み込んだあとの各行には、改行コードが入っていることがあるので除去する
+
+            # キャラクターを記載する際は、
+            #  ・ 番号は0からはじめ、改行するごとに1ずつ増やさねばならない
+            # という仕様を設ける。
+            # どうせそうするのだから、「番号>」の部分は要らないのでは無いかとも思うが、
+            # 後から参照するときに、このキャラは何番だっけ…と迷わないための、お行儀の良いインデックスに。と暫定的に思う
+        
+        #コメントはすっとばす
+        if re.match(r'//', line):
+            continue
+        
+        #フラグかどうか
+        REflag = re.match(r'f:(.*)', line)
+        if REflag:
+            flag_max = int(REflag.group(1))
+            for i in range(flag_max):
+                flagArr.append(False)
+                
+        #キャラクターかどうか
+        chara_list = re.match(r'([0-9]+)@(.*)', line)   #「キャラクター番号@キャラクター名」になっている。
+        if chara_list:
+            charaArr.append("")
+            charaArr[int(chara_list.group(1))] = chara_list.group(2)   
+            #charaArr[キャラクター番号] = キャラクター名にする
+            continue                
             
-    #アイテムかどうか
-    item_list = re.match(r'[0-9]*!(.*)!(.*)', line)  
-    if item_list:
-        itemArr.append([False, item_list.group(1), item_list.group(2)])
-        continue
-    
-    #ページのタイトルかどうか
-    REtitle =  re.match(r"^#(.*)", line)
-    if REtitle:
-        temp_pageArr = {"title": REtitle.group(1), "description":[] , "selection": []}
-        mode=2  #次からの行は、ページの描写部であることを示す
-        page_num+=1 #ページ番号を一つ増やす。
-        continue
+        #アイテムかどうか
+        item_list = re.match(r'[0-9]*!(.*)!(.*)', line)  
+        if item_list:
+            itemArr.append([False, item_list.group(1), item_list.group(2)])
+            continue
         
-    #ページの画像かどうか 
-    REimg =  re.match(r"^C:(.*)", line)
-    if REimg:
-        temp_pageArr["img"] = REimg.group(1)
-        continue   
-        
-    #ページの選択肢かどうか
-    REselection =  re.match(r"^%(.*)%(.*)", line)
-    if REselection:
-        temp_pageArr["selection"].append([REselection.group(1), REselection.group(2)]) #←あとでこの構造を変えるが、暫定的にこうする
-        continue
-    
-    #ページの終わりかどうか
-    REend_of_page =  re.match(r"^(.*?)E$", line)
-    if REend_of_page:
-        mode=0 #ページの読み取り終了
-        pageArr.append(temp_pageArr)
-        continue
-
-    #ページのタイトルでも選択肢でも終わりでもなく、描写部の場合は
-    if mode==2: 
-        adjusted_line = ["n", line] #下のところでフィルターして、特に問題なければこれが入る
-        
-        
-        REdecoration_talk = re.match(r"b/([0-9]+)>(.*)", line)
-        if REdecoration_talk:
-            adjusted_line = ["bt", REdecoration_talk.group(1), REdecoration_talk.group(2)]
-        else:
-            REdecoration = re.match(r"b/(.*)", line)
-            if REdecoration:
-                adjusted_line = ["bold", REdecoration.group(1)]
+        #ページのタイトルかどうか
+        REtitle =  re.match(r"^#(.*)", line)
+        if REtitle:
+            temp_pageArr = {"title": REtitle.group(1), "description":[] , "selection": []}
+            mode=2  #次からの行は、ページの描写部であることを示す
+            page_num_counter+=1 #ページ番号を一つ増やす。
+            continue
             
-            REtalk= re.match(r"([0-9]+)>(.*)", line)
-            if REtalk:
-                adjusted_line = ["talk", REtalk.group(1), REtalk.group(2)]
+        #ページの画像かどうか 
+        REimg =  re.match(r"^C:(.*)", line)
+        if REimg:
+            temp_pageArr["img"] = REimg.group(1)
+            continue   
             
+        #ページの選択肢かどうか
+        REselection =  re.match(r"^%(.*)%(.*)", line)
+        if REselection:
+            temp_pageArr["selection"].append([REselection.group(1), REselection.group(2)]) #←あとでこの構造を変えるが、暫定的にこうする
+            continue
         
-        temp_pageArr["description"].append(adjusted_line)
-        continue
-   
-# 選択肢について
-# リストボックスに表示する文字列はリストとかタプルとかでなければならない。
-# そのため、構造を変更する。
-# [[選択肢名, 選択後関数], ... ] --> [[選択名, ...] , [選択後関数, ...]]
+        #ページの終わりかどうか
+        REend_of_page =  re.match(r"^(.*?)E$", line)
+        if REend_of_page:
+            mode=0 #ページの読み取り終了
+            pageArr.append(temp_pageArr)
+            continue
 
-for j in pageArr:
-    temp_selection = j["selection"]
-    if(len(temp_selection) > 0):
-        selection_nameArr = []
-        selection_funcArr = []
-        for k in temp_selection:
-            selection_nameArr.append(k[0])
-            selection_funcArr.append(k[1])
+        #ページのタイトルでも選択肢でも終わりでもなく、描写部の場合は
+        if mode==2: 
+            adjusted_line = ["n", line] #下のところでフィルターして、特に問題なければこれが入る
+            
+            
+            REdecoration_talk = re.match(r"b/([0-9]+)>(.*)", line)
+            if REdecoration_talk:
+                adjusted_line = ["bt", REdecoration_talk.group(1), REdecoration_talk.group(2)]
+            else:
+                REdecoration = re.match(r"b/(.*)", line)
+                if REdecoration:
+                    adjusted_line = ["bold", REdecoration.group(1)]
+                
+                REtalk= re.match(r"([0-9]+)>(.*)", line)
+                if REtalk:
+                    adjusted_line = ["talk", REtalk.group(1), REtalk.group(2)]
+                
+            
+            temp_pageArr["description"].append(adjusted_line)
+            continue
+       
+    # 選択肢について
+    # リストボックスに表示する文字列はリストとかタプルとかでなければならない。
+    # そのため、構造を変更する。
+    # [[選択肢名, 選択後関数], ... ] --> [[選択名, ...] , [選択後関数, ...]]
 
-        temp_selection = [selection_nameArr, selection_funcArr]
-    j["selection"] = temp_selection
-    
+    for j in pageArr:
+        temp_selection = j["selection"]
+        if(len(temp_selection) > 0):
+            selection_nameArr = []
+            selection_funcArr = []
+            for k in temp_selection:
+                selection_nameArr.append(k[0])
+                selection_funcArr.append(k[1])
+
+            temp_selection = [selection_nameArr, selection_funcArr]
+        j["selection"] = temp_selection
+
+    global page_num
+    page_num = 0    #ページ番号を0にする
+#============================================================= 
+#============================================================= 
+#============================================================= 
+#=============================================================     
 #######################################    
 #アイテムを表示する。 show_pageと対。
 def show_item():     
@@ -352,7 +413,21 @@ def show_page():
         
         if now_desc[0]=="bold": #太字
             temp_descArr.append(tk.Message(tempF, justify="left", text=now_desc[1], width=380,font=Bold_font))
+            
+        elif now_desc[0]=="talk": #セリフ
+            chara_name = charaArr[int(now_desc[1])]
+            chara_talk = now_desc[2]
+            temp_descArr.append(tk.Label(tempF, justify="left",anchor="w", text=f"{chara_name} >  ",font=Default_font, wraplength=250))
+            temp_descArr.append(tk.Label(tempF, justify="left" ,anchor="w",text=chara_talk,font=Default_font, wraplength=250))
+            
+            
 
+        elif now_desc[0]=="bt":   #太字でセリフ        
+            chara_name = charaArr[int(now_desc[1])]
+            chara_talk = now_desc[2]
+            temp_descArr.append(tk.Label(tempF, justify="left", text=f"{chara_name} >\t",width=140,font=Default_font, wraplength=140))
+            temp_descArr.append(tk.Label(tempF, justify="left", text=chara_talk, width=140,font=Bold_font, wraplength=140))
+            
         else:          
             temp_descArr.append(tk.Message(tempF, justify="left", text=now_desc[1], width=380,font=Default_font))
         
@@ -365,6 +440,9 @@ def show_page():
         
         if len(i) == 2:
             i[1].pack(side="left", fill="x", anchor="nw")
+        if len(i) == 3:
+            i[1].pack(side="left", fill="x",anchor="ne")#, expand=1)
+            i[2].pack(side="left", fill="x",anchor="ne")#, expand=1)
     
     ###絵###
     global img
@@ -382,13 +460,16 @@ def show_page():
     else:
         selectV.set(now_page["selection"][0])   
         selectL.select_clear(0, tk.END) #これがないと、一番上の項目がもともと選択されている状態になる。
-        if len(now_page["selection"][0])>selectL["height"]:
-            #gridにて配置
-            selectS.grid(row=0, column=1, sticky=(N, S))
-        else:
-            selectS.grid_remove()
-
-
+        visible_change_selectS()    #スクロールバーを表示するかどうか決める
+        
+#リストボックスSelectSが
+def visible_change_selectS():
+    if selectL.size()>selectL["height"]:
+        #gridにて配置
+        selectS.grid(row=0, column=1, sticky=(N, S))
+    else:
+        selectS.grid_remove()
+  
 ##############################################
 #選択結果を実行する
 def eval_selection(i):
@@ -448,7 +529,7 @@ def eval_selection(i):
                 flagArr[int(REoffflag.group(1))] = False
                 continue
             
-            #もしアフラグが立っているなら-------------------
+            #もしフラグが立っているなら-------------------
             REifflag = re.match(r"iff([0-9]*)(.*?)<(.*)><(.*)>", s)
             #ifiのフラグ版
             #ifi [フラグ番号] [区切り文字] < [True節] >< [False節] >
@@ -468,8 +549,6 @@ def eval_selection(i):
     show_page()
 
 
-#ここからが表示の本番！
-page_num = 0    #今いるページ番号
 
 ###################################
 
@@ -486,7 +565,26 @@ def switch_item_page():
         itemB["text"] = "もちものを見る"
         itemB["bg"]="#E0E0E0"
         show_page()
+
+
+#===================================
+
+
+#最初から
+def from_scratch():
+    global flagArr
+    global charaArr
+    global itemArr
+    global pageArr
     
+    flagArr = []
+    charaArr= []
+    itemArr = []
+    pageArr = []
+    item_page="page"
+    
+    load_file('source/script.txt')
+    show_page()
 #################################
 # 関数は以上     
         
@@ -507,6 +605,8 @@ selectL.grid(row=0, column=0)
 selectB.pack(side="top")
 itemB.pack(side="bottom")
 
+
+load_file('source/script.txt')
 show_page()
 
 root.mainloop()
