@@ -25,9 +25,11 @@ page_num = -1 #ページ番号。BTAPでいうところのmov関数などの制�
 
 root = Tk()
 root.title("Tk習作")
-root.geometry("600x400")
-root.resizable(width=False, height=False)
+root.geometry("650x450")
+#root.resizable(width=False, height=False)
 
+#=======================================
+# フォント
 Default_font = tkfont.Font(
     root,
     family="",
@@ -49,9 +51,47 @@ UI_large_font = tkfont.Font(
 
 Title_font = tkfont.Font(root, family="Yu Gothic Bold", size=20)
 
+#==============================
+menubar= tk.Menu(root)
+root.config(menu=menubar)
+
+#フォントメニュー～～～～～～～～～～～～～
+fontmenu=tk.Menu(menubar, tearoff=1)
+#①フォントサイズ
+fontmenu.add_command(label="文字を大きくする",command=lambda:change_font_size(1))
+fontmenu.add_command(label="文字を小さくする",command=lambda:change_font_size(-1))
+fontmenu.add_separator()
+#②フォント
+fontmenu.add_command(label="MS UI Ghotic",command=lambda:change_font("MS UI Ghotic"))
+fontmenu.add_command(label="BIZ UDゴシック",command=lambda:change_font("BIZ UDゴシック"))
+fontmenu.add_command(label="BIZ UD明朝 Medium",command=lambda:change_font("BIZ UD明朝 Medium"))
+fontmenu.add_command(label="Times",command=lambda:change_font("Times New Roman"))
+fontmenu.add_command(label="游明朝",command=lambda:change_font("游明朝"))
+fontmenu.add_command(label="Yu Gothic UI Semilight", command=lambda:change_font("Yu Gothic UI Semilight"))
+fontmenu.add_command(label="メイリオ", command=lambda:change_font("メイリオ"))
+
+#以下の2つは、半ばジョーク枠
+fontmenu.add_command(label="HGS教科書体",command=lambda:change_font("HGS教科書体"))
+fontmenu.add_command(label="HGS創英角ﾎﾟｯﾌﾟ体",command=lambda:change_font("HGS創英角ﾎﾟｯﾌﾟ体"))
+
+menubar.add_cascade(label="フォント", menu=fontmenu)
+
+#フォントを変える
+def change_font(fontname):
+    Default_font["family"]=  fontname
+    Bold_font["family"]=  fontname
+    UI_large_font["family"]=  fontname
+    Title_font["family"]=  fontname
+    
+#フォントサイズを d だけ増やす
+def change_font_size(d):
+    Default_font["size"]+=d
+    Bold_font["size"]+=d
+    UI_large_font["size"]+=d
+    Title_font["size"]+=d
 #左側~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #左側（タイトル、描写）のウィジェットをまとめるフレーム
-pageF = tk.Frame(root, width=398)
+pageF = tk.Frame(root, width=400, pady=10,padx=10)
 pageF.propagate(False) #フレームサイズが変更されないようにする
 
 ############
@@ -67,14 +107,14 @@ msgArr = []
 
 #右側~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #右側（画像、選択肢）のウィジェットをまとめるフレーム
-subF = tk.Frame(root, width=206, bg="#c0c0c0")
+subF = tk.Frame(root, width=206,pady=15,padx=10, bg="#c0c0c0")
 subF.propagate(False) #フレームサイズが変更されないようにする
 
 ############
 #画像表示用 
 # イメージ作成
 # イメージの配置がよくわからん。実際に表示されるのはshow_page内での再処理を経てから
-canvas = tk.Canvas(subF, bg="black", height=198, width=202, relief=tk.RIDGE, borderwidth="3")
+canvas = tk.Canvas(subF, bg="black", height=198, width=198, relief=tk.RIDGE, borderwidth="3")
 img = PhotoImage(file="source/images/white.png", height=95, width=95)
 canvas.create_image(105,105,image=img)
 
@@ -330,7 +370,7 @@ def show_page():
     global img
     img_src= "source/images/" + now_page["img"] + ".png"
     img = PhotoImage(file=img_src, width=200,height=200)
-    canvas.create_image(0,4,image=img, anchor="nw")
+    canvas.create_image(5,4,image=img, anchor="nw")
     
     
     ###選択肢###
