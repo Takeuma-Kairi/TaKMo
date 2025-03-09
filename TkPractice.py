@@ -14,7 +14,8 @@ pageArr = []
 
 page_num = 0 #ページ番号。BTAPでいうところのmov関数などの制御に使おうかと。
 #===================================
-item_page="page" #今表示しているものは、ページ("page")かもちもの("item")か
+item_page="page" #今表示しているものは、ページ("page")か、もちもの("item")か
+pageLabel_width=380
 
 root = Tk()
 root.title("Tk習作")
@@ -91,10 +92,18 @@ def change_font_size(d):
 
 #表示メニュー～～～～～～～～～～～～～
 Appearmenu=tk.Menu(menubar, tearoff=1)
+#リストボックスのサイズ変更
 Appearmenu.add_command(label="リストボックスの幅を大きく",command=lambda:change_SelectL_width(1))
 Appearmenu.add_command(label="リストボックスの幅を小さく",command=lambda:change_SelectL_width(-1))
 Appearmenu.add_command(label="リストボックスの高さを大きく",command=lambda:change_SelectL_height(1))
 Appearmenu.add_command(label="リストボックスの高さを小さく",command=lambda:change_SelectL_height(-1))
+fontmenu.add_separator()
+#左欄のサイズ変更
+Appearmenu.add_command(label="左の幅を大きく",command=lambda:change_pageF_width(15))
+Appearmenu.add_command(label="左の幅を小さく",command=lambda:change_pageF_width(-15))
+
+
+
 
 #リストボックスの高さ、幅を変更する
 def change_SelectL_height(d):
@@ -103,7 +112,27 @@ def change_SelectL_height(d):
 
 def change_SelectL_width(d):
     selectL["width"] += d 
+
+# 左側の欄の幅を変える。内部のフォームの幅も変える。
+def change_pageF_width(d):
+    global pageLabel_width
+    global msgArr
     
+    pageF["width"] += d 
+    pageLabel_width += d 
+    
+    #内部のMessage、Labelの幅を変える。
+    for i in msgArr:
+        if len(i)<3:
+            for j in i:
+                j["width"] += d #第0、１要素はFrame,Message
+        else:
+            i[0]["width"] += d  #第0要素目はFrame
+            i[1]["wraplength"] += d #第1,2要素目はLabel
+            i[2]["wraplength"] += d
+            
+            
+            
 #ページ閲覧についてのメニュー～～～～～～～～～～～～～
 Pagemenu=tk.Menu(menubar, tearoff=1)
 Pagemenu.add_command(label="初期化",command=lambda:from_scratch())
@@ -199,10 +228,6 @@ def Enter_key_switch_item_page(event):
 #itemBボタンでエンターキーを押されても、switch_item_page()と同等の処理を行う。commandプロパティは、クリック時しか動かないので。
 itemB.bind("<Return>", Enter_key_switch_item_page)
 
-
-
-#============================================================= 
-#============================================================= 
 #=============================================================
 #============================================================= 
 
@@ -356,9 +381,9 @@ def show_item():
             
             item_name=f"★ {i[1]} ★"
             
-            temp_itemArr.append(tk.Message(tempF, justify="center", text=item_name, width=380, font=Default_font))
-            temp_itemArr.append(tk.Message(tempF, justify="center", text=i[2], width=380, font=Default_font))
-            temp_itemArr.append(tk.Message(tempF, justify="center", text="", width=380, font=Default_font))
+            temp_itemArr.append(tk.Label(tempF, justify="center", text=item_name, wraplength=pageLabel_width, font=Default_font))
+            temp_itemArr.append(tk.Label(tempF, justify="center", text=i[2], wraplength=pageLabel_width, font=Default_font))
+            temp_itemArr.append(tk.Label(tempF, justify="center", text="", font=Default_font))
             
             msgArr.append(temp_itemArr)
             
@@ -367,7 +392,7 @@ def show_item():
         tempF = tk.Frame(pageF)
         temp_itemArr = [tempF]
         
-        temp_itemArr.append(tk.Message(tempF, justify="center", text="今は何も持っていません", width=380, font=Default_font))
+        temp_itemArr.append(tk.Message(tempF, justify="center", text="今は何も持っていません", width=pageLabel_width, font=Default_font))
         
         msgArr.append(temp_itemArr)
         
@@ -412,12 +437,12 @@ def show_page():
         temp_descArr = [tempF]
         
         if now_desc[0]=="bold": #太字
-            temp_descArr.append(tk.Message(tempF, justify="left", text=now_desc[1], width=380,font=Bold_font))
+            temp_descArr.append(tk.Message(tempF, justify="left", text=now_desc[1], width=pageLabel_width,font=Bold_font))
             
         elif now_desc[0]=="talk": #セリフ
             chara_name = charaArr[int(now_desc[1])]
             chara_talk = now_desc[2]
-            temp_descArr.append(tk.Label(tempF, justify="left",anchor="w", text=f"{chara_name} >  ",font=Default_font, wraplength=250))
+            temp_descArr.append(tk.Label(tempF, justify="left",anchor="w", text=f"{chara_name} >",font=Default_font, wraplength=250))
             temp_descArr.append(tk.Label(tempF, justify="left" ,anchor="w",text=chara_talk,font=Default_font, wraplength=250))
             
             
@@ -425,11 +450,11 @@ def show_page():
         elif now_desc[0]=="bt":   #太字でセリフ        
             chara_name = charaArr[int(now_desc[1])]
             chara_talk = now_desc[2]
-            temp_descArr.append(tk.Label(tempF, justify="left", text=f"{chara_name} >\t",width=140,font=Default_font, wraplength=140))
-            temp_descArr.append(tk.Label(tempF, justify="left", text=chara_talk, width=140,font=Bold_font, wraplength=140))
+            temp_descArr.append(tk.Label(tempF, justify="left", text=f"{chara_name} >",width=140,font=Default_font, wraplength=250))
+            temp_descArr.append(tk.Label(tempF, justify="left", text=chara_talk, width=140,font=Bold_font, wraplength=250))
             
         else:          
-            temp_descArr.append(tk.Message(tempF, justify="left", text=now_desc[1], width=380,font=Default_font))
+            temp_descArr.append(tk.Message(tempF, justify="left", text=now_desc[1], width=pageLabel_width,font=Default_font))
         
         msgArr.append(temp_descArr)
     
